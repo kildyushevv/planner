@@ -561,6 +561,8 @@
   var syncCode = null;
   var syncChannel = null;
   var pushTimer = null;
+  var lastSyncedAt = null;
+  var pollStarted = false;
 
   function initSupabase() {
     if (window.supabase && window.supabase.createClient) {
@@ -599,9 +601,38 @@
 
   function pushRemoteTasks(code, list) {
     if (!sb) return Promise.resolve();
+    var stamp = new Date().toISOString();
     return sb.from("planner_sync")
-      .upsert({ sync_code: code, tasks: list, updated_at: new Date().toISOString() })
-      .then(function (res) { if (res.error) throw res.error; });
+      .upsert({ sync_code: code, tasks: list, updated_at: stamp })
+      .then(function (res) {
+        if (res.error) throw res.error;
+        lastSyncedAt = stamp;
+      });
+  }
+
+  function pollRemote() {
+    if (!sb || !syncCode || document.hidden) return;
+    sb.from("planner_sync").select("tasks,updated_at").eq("sync_code", syncCode).maybeSingle()
+      .then(function (res) {
+        if (res.error || !res.data) return;
+        if (res.data.updated_at && res.data.updated_at !== lastSyncedAt) {
+          lastSyncedAt = res.data.updated_at;
+          tasks = res.data.tasks || [];
+          saveTasks();
+          render();
+          setSyncStatus("ok", "Обновлено с другого устройства");
+        }
+      })
+      .catch(function () {});
+  }
+
+  function ensurePolling() {
+    if (pollStarted || !sb) return;
+    pollStarted = true;
+    setInterval(pollRemote, 20000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) pollRemote();
+    });
   }
 
   function scheduleSync() {
@@ -628,6 +659,7 @@
         filter: "sync_code=eq." + code
       }, function (payload) {
         if (payload.new && payload.new.tasks) {
+          lastSyncedAt = payload.new.updated_at;
           tasks = payload.new.tasks;
           saveTasks();
           render();
@@ -652,6 +684,7 @@
       .then(function (res) {
         if (res.error) throw res.error;
         if (res.data) {
+          lastSyncedAt = res.data.updated_at;
           tasks = res.data.tasks || [];
           saveTasks();
           render();
@@ -661,6 +694,7 @@
       })
       .then(function () {
         subscribeRealtime(code);
+        ensurePolling();
         setSyncStatus("ok", "Синхронизировано · " + code);
       })
       .catch(function () {
