@@ -1,0 +1,735 @@
+<title>Ежедневник</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #EDEFEA;
+    --paper: #FBFBF8;
+    --paper-line: #E3E6DD;
+    --ink: #1D2420;
+    --ink-soft: #5B6560;
+    --ink-faint: #8B958E;
+    --line: #D8DCD3;
+    --accent: #5B3A73;
+    --accent-contrast: #FBFBF8;
+    --accent-soft: #EFE7F2;
+    --accent-soft-line: #DCC9E4;
+    --high: #B5432F;
+    --high-soft: #F6E3DE;
+    --medium: #A9711E;
+    --medium-soft: #F5E8D2;
+    --low: #4F7A57;
+    --low-soft: #E4EDE3;
+    --done: #9AA59B;
+    --shadow: rgba(29, 36, 32, 0.10);
+    --danger: #B5432F;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181A;
+      --paper: #1B2023;
+      --paper-line: #262C29;
+      --ink: #E8EBE4;
+      --ink-soft: #9AA59B;
+      --ink-faint: #6D7871;
+      --line: #2B322E;
+      --accent: #CDA9E0;
+      --accent-contrast: #1B2023;
+      --accent-soft: #2A2333;
+      --accent-soft-line: #3B3145;
+      --high: #E08469;
+      --high-soft: #3A211B;
+      --medium: #E4B15C;
+      --medium-soft: #3A2E16;
+      --low: #8FC79A;
+      --low-soft: #1E2B20;
+      --done: #4B564E;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --danger: #E08469;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14181A;
+    --paper: #1B2023;
+    --paper-line: #262C29;
+    --ink: #E8EBE4;
+    --ink-soft: #9AA59B;
+    --ink-faint: #6D7871;
+    --line: #2B322E;
+    --accent: #CDA9E0;
+    --accent-contrast: #1B2023;
+    --accent-soft: #2A2333;
+    --accent-soft-line: #3B3145;
+    --high: #E08469;
+    --high-soft: #3A211B;
+    --medium: #E4B15C;
+    --medium-soft: #3A2E16;
+    --low: #8FC79A;
+    --low-soft: #1E2B20;
+    --done: #4B564E;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --danger: #E08469;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background:
+      radial-gradient(circle at 1px 1px, var(--paper-line) 1px, transparent 0) 0 0/22px 22px,
+      var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  .sheet {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 20px 50px var(--shadow);
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    padding: 30px 34px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+  }
+
+  .greeting {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+
+  h1.date {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(26px, 4vw, 34px);
+    margin: 0;
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+
+  .date .weekday { font-style: italic; color: var(--ink-soft); }
+
+  .progress-wrap {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .progress-count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .progress-count span { color: var(--ink-faint); font-size: 15px; }
+
+  .progress-bar {
+    width: 120px;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--line);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  /* Add form */
+  form#add-form {
+    padding: 22px 34px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 10px;
+  }
+
+  .field-title { grid-column: 1 / -1; }
+
+  label.sr {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  input, select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 10px 12px;
+  }
+  input:focus, select:focus, button:focus-visible, .task-title:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  #title-input { width: 100%; font-size: 15px; }
+  #time-input { font-family: "IBM Plex Mono", monospace; width: 108px; }
+  #category-input { width: 130px; }
+  #priority-input { width: 118px; }
+
+  button.add-btn {
+    grid-column: 1 / -1;
+    font: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    border: none;
+    border-radius: 9px;
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  button.add-btn:hover { opacity: 0.88; }
+
+  /* Filters */
+  .filters {
+    padding: 16px 34px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .filters .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    margin-right: 4px;
+  }
+
+  .chip {
+    font: inherit;
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--ink); }
+  .chip.active {
+    background: var(--accent-soft);
+    border-color: var(--accent-soft-line);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Task list */
+  .list-section { padding: 8px 34px 30px; }
+  .section-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin: 22px 0 10px;
+  }
+  .section-title:first-child { margin-top: 18px; }
+
+  .task-row {
+    display: grid;
+    grid-template-columns: 56px 20px 1fr auto;
+    align-items: start;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--line);
+    position: relative;
+  }
+  .task-row:last-child { border-bottom: none; }
+
+  .task-time {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .task-rail {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    border: 2px solid var(--prio-color, var(--ink-faint));
+    background: var(--paper);
+  }
+
+  .checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--prio-color, var(--line));
+    background: var(--paper);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .checkbox:checked {
+    background: var(--prio-color, var(--ink-faint));
+    border-color: var(--prio-color, var(--ink-faint));
+  }
+  .checkbox:checked::after {
+    content: "";
+    width: 5px; height: 9px;
+    border: solid var(--paper);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+
+  .task-body { min-width: 0; }
+  .task-title {
+    font-size: 15px;
+    line-height: 1.4;
+    border: none;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    color: var(--ink);
+    cursor: text;
+  }
+  .task-row.done .task-title {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-color: var(--done);
+  }
+  .task-row.done .task-rail, .task-row.done .checkbox { opacity: 0.55; }
+
+  .task-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .tag.category {
+    background: var(--line);
+    color: var(--ink-soft);
+  }
+  .tag.priority-high { background: var(--high-soft); color: var(--high); }
+  .tag.priority-medium { background: var(--medium-soft); color: var(--medium); }
+  .tag.priority-low { background: var(--low-soft); color: var(--low); }
+
+  .task-actions {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 1px;
+  }
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 6px;
+  }
+  .del-btn:hover { color: var(--danger); background: var(--high-soft); }
+
+  .empty-state {
+    text-align: center;
+    padding: 46px 20px;
+    color: var(--ink-faint);
+  }
+  .empty-state .glyph { font-size: 26px; margin-bottom: 10px; opacity: 0.7; }
+  .empty-state p { margin: 0; font-size: 14px; }
+
+  footer.note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 18px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+  @media (max-width: 560px) {
+    header { flex-direction: column; align-items: flex-start; }
+    .progress-wrap { text-align: left; }
+    form#add-form { grid-template-columns: 1fr 1fr; }
+    #category-input, #priority-input, #time-input { width: 100%; }
+    .task-row { grid-template-columns: 44px 18px 1fr auto; }
+  }
+</style>
+
+<div class="page">
+  <div class="sheet">
+    <header>
+      <div>
+        <p class="greeting" id="greeting">Доброе утро</p>
+        <h1 class="date" id="date-heading">—</h1>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-count" id="progress-count">0<span>/0</span></div>
+        <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+      </div>
+    </header>
+
+    <form id="add-form">
+      <div class="field-title">
+        <label class="sr" for="title-input">Задача</label>
+        <input id="title-input" type="text" placeholder="Что нужно сделать?" autocomplete="off" required />
+      </div>
+      <label class="sr" for="time-input">Время</label>
+      <input id="time-input" type="time" />
+      <label class="sr" for="category-input">Категория</label>
+      <input id="category-input" type="text" list="category-options" placeholder="Категория" autocomplete="off" />
+      <datalist id="category-options"></datalist>
+      <label class="sr" for="priority-input">Приоритет</label>
+      <select id="priority-input">
+        <option value="medium">Средний</option>
+        <option value="high">Высокий</option>
+        <option value="low">Низкий</option>
+      </select>
+      <button type="submit" class="add-btn">Добавить задачу</button>
+    </form>
+
+    <div class="filters" id="filters"></div>
+
+    <div class="list-section" id="list-section"></div>
+  </div>
+  <footer class="note">Задачи хранятся в этом браузере — на этом устройстве они никуда не денутся.</footer>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = "daily-planner.tasks.v1";
+  var PRIORITY_LABEL = { high: "Высокий", medium: "Средний", low: "Низкий" };
+  var PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+  var PRIORITY_VAR = { high: "var(--high)", medium: "var(--medium)", low: "var(--low)" };
+
+  var seedTasks = [
+    { id: "s1", title: "Планёрка с командой", category: "Работа", priority: "high", time: "09:30", done: false },
+    { id: "s2", title: "Позвонить врачу насчёт записи", category: "Личное", priority: "medium", time: "13:00", done: false },
+    { id: "s3", title: "Тренировка", category: "Здоровье", priority: "medium", time: "18:30", done: false },
+    { id: "s4", title: "Купить продукты на неделю", category: "Дом", priority: "low", time: null, done: false },
+    { id: "s5", title: "Проверить почту", category: "Работа", priority: "low", time: null, done: true }
+  ];
+
+  var tasks = [];
+  var filterCategory = "all";
+  var filterPriority = "all";
+
+  function loadTasks() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw === null) {
+        tasks = seedTasks.map(function (t) { return Object.assign({}, t, { createdAt: Date.now() }); });
+        saveTasks();
+        return;
+      }
+      var parsed = JSON.parse(raw);
+      tasks = Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      tasks = [];
+    }
+  }
+
+  function saveTasks() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch (e) {
+      /* localStorage unavailable — continue without persistence */
+    }
+  }
+
+  function uid() {
+    return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function renderDate() {
+    var now = new Date();
+    var weekday = now.toLocaleDateString("ru-RU", { weekday: "long" });
+    var rest = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    weekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    document.getElementById("date-heading").innerHTML =
+      '<span class="weekday">' + weekday + '</span>, ' + rest;
+
+    var hour = now.getHours();
+    var greeting = hour < 6 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
+    document.getElementById("greeting").textContent = greeting;
+  }
+
+  function getCategories() {
+    var set = {};
+    tasks.forEach(function (t) { if (t.category) set[t.category] = true; });
+    return Object.keys(set).sort();
+  }
+
+  function renderDatalist() {
+    var dl = document.getElementById("category-options");
+    dl.innerHTML = "";
+    getCategories().forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c;
+      dl.appendChild(opt);
+    });
+  }
+
+  function renderFilters() {
+    var wrap = document.getElementById("filters");
+    wrap.innerHTML = "";
+
+    var catLabel = document.createElement("span");
+    catLabel.className = "label";
+    catLabel.textContent = "Категория";
+    wrap.appendChild(catLabel);
+
+    var cats = ["all"].concat(getCategories());
+    cats.forEach(function (c) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip" + (filterCategory === c ? " active" : "");
+      btn.textContent = c === "all" ? "Все" : c;
+      btn.addEventListener("click", function () {
+        filterCategory = c;
+        render();
+      });
+      wrap.appendChild(btn);
+    });
+
+    var prioLabel = document.createElement("span");
+    prioLabel.className = "label";
+    prioLabel.style.marginLeft = "10px";
+    prioLabel.textContent = "Приоритет";
+    wrap.appendChild(prioLabel);
+
+    [["all", "Все"], ["high", "Высокий"], ["medium", "Средний"], ["low", "Низкий"]].forEach(function (pair) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip" + (filterPriority === pair[0] ? " active" : "");
+      btn.textContent = pair[1];
+      btn.addEventListener("click", function () {
+        filterPriority = pair[0];
+        render();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function matchesFilter(t) {
+    if (filterCategory !== "all" && t.category !== filterCategory) return false;
+    if (filterPriority !== "all" && t.priority !== filterPriority) return false;
+    return true;
+  }
+
+  function buildTaskRow(t) {
+    var row = document.createElement("div");
+    row.className = "task-row" + (t.done ? " done" : "");
+    row.style.setProperty("--prio-color", PRIORITY_VAR[t.priority] || "var(--ink-faint)");
+
+    var timeEl = document.createElement("div");
+    timeEl.className = "task-time";
+    timeEl.textContent = t.time || "";
+    row.appendChild(timeEl);
+
+    var rail = document.createElement("div");
+    rail.className = "task-rail";
+    row.appendChild(rail);
+
+    var body = document.createElement("div");
+    body.className = "task-body";
+
+    var titleRow = document.createElement("div");
+    titleRow.style.display = "flex";
+    titleRow.style.alignItems = "flex-start";
+    titleRow.style.gap = "10px";
+
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "checkbox";
+    checkbox.checked = !!t.done;
+    checkbox.style.setProperty("--prio-color", PRIORITY_VAR[t.priority] || "var(--ink-faint)");
+    checkbox.addEventListener("change", function () {
+      t.done = checkbox.checked;
+      saveTasks();
+      render();
+    });
+
+    var titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "task-title";
+    titleInput.value = t.title;
+    titleInput.addEventListener("change", function () {
+      var v = titleInput.value.trim();
+      if (v) { t.title = v; saveTasks(); } else { titleInput.value = t.title; }
+    });
+    titleInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") titleInput.blur();
+    });
+
+    titleRow.appendChild(checkbox);
+    titleRow.appendChild(titleInput);
+    body.appendChild(titleRow);
+
+    var tags = document.createElement("div");
+    tags.className = "task-tags";
+    if (t.category) {
+      var catTag = document.createElement("span");
+      catTag.className = "tag category";
+      catTag.textContent = t.category;
+      tags.appendChild(catTag);
+    }
+    var prioTag = document.createElement("span");
+    prioTag.className = "tag priority-" + t.priority;
+    prioTag.textContent = PRIORITY_LABEL[t.priority];
+    tags.appendChild(prioTag);
+    body.appendChild(tags);
+
+    row.appendChild(body);
+
+    var actions = document.createElement("div");
+    actions.className = "task-actions";
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "del-btn";
+    del.setAttribute("aria-label", "Удалить задачу");
+    del.textContent = "✕";
+    del.addEventListener("click", function () {
+      tasks = tasks.filter(function (x) { return x.id !== t.id; });
+      saveTasks();
+      render();
+    });
+    actions.appendChild(del);
+    row.appendChild(actions);
+
+    return row;
+  }
+
+  function sortTasks(list) {
+    return list.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var pa = PRIORITY_ORDER[a.priority], pb = PRIORITY_ORDER[b.priority];
+      if (pa !== pb) return pa - pb;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+  }
+
+  function render() {
+    renderDate();
+    renderDatalist();
+    renderFilters();
+
+    var visible = tasks.filter(matchesFilter);
+    var total = visible.length;
+    var doneCount = visible.filter(function (t) { return t.done; }).length;
+
+    document.getElementById("progress-count").innerHTML = doneCount + "<span>/" + total + "</span>";
+    document.getElementById("progress-fill").style.width = (total ? (doneCount / total * 100) : 0) + "%";
+
+    var section = document.getElementById("list-section");
+    section.innerHTML = "";
+
+    if (tasks.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = '<div class="glyph">🗒️</div><p>Задач нет — добавьте первую наверху.</p>';
+      section.appendChild(empty);
+      return;
+    }
+
+    if (visible.length === 0) {
+      var emptyFiltered = document.createElement("div");
+      emptyFiltered.className = "empty-state";
+      emptyFiltered.innerHTML = '<div class="glyph">🔍</div><p>Под текущий фильтр ничего не подходит.</p>';
+      section.appendChild(emptyFiltered);
+      return;
+    }
+
+    var timed = sortTasks(visible.filter(function (t) { return !!t.time; }))
+      .sort(function (a, b) {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return a.time.localeCompare(b.time);
+      });
+    var untimed = sortTasks(visible.filter(function (t) { return !t.time; }));
+
+    if (timed.length) {
+      var h1 = document.createElement("div");
+      h1.className = "section-title";
+      h1.textContent = "По расписанию";
+      section.appendChild(h1);
+      timed.forEach(function (t) { section.appendChild(buildTaskRow(t)); });
+    }
+
+    if (untimed.length) {
+      var h2 = document.createElement("div");
+      h2.className = "section-title";
+      h2.textContent = "Без привязки ко времени";
+      section.appendChild(h2);
+      untimed.forEach(function (t) { section.appendChild(buildTaskRow(t)); });
+    }
+  }
+
+  document.getElementById("add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var titleInput = document.getElementById("title-input");
+    var timeInput = document.getElementById("time-input");
+    var categoryInput = document.getElementById("category-input");
+    var priorityInput = document.getElementById("priority-input");
+
+    var title = titleInput.value.trim();
+    if (!title) return;
+
+    tasks.push({
+      id: uid(),
+      title: title,
+      category: categoryInput.value.trim(),
+      priority: priorityInput.value,
+      time: timeInput.value || null,
+      done: false,
+      createdAt: Date.now()
+    });
+
+    saveTasks();
+    titleInput.value = "";
+    timeInput.value = "";
+    categoryInput.value = "";
+    priorityInput.value = "medium";
+    titleInput.focus();
+    render();
+  });
+
+  loadTasks();
+  render();
+})();
+</script>
