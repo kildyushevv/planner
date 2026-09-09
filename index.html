@@ -490,8 +490,11 @@
     background: transparent;
     padding: 0;
     width: 100%;
+    min-width: 0;
     color: var(--ink);
     cursor: text;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .task-row.done .task-title {
     color: var(--done);
