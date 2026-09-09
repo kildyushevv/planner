@@ -253,6 +253,144 @@
     line-height: 1.5;
   }
 
+  .today-pill {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid var(--accent-soft-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 4px 10px;
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  .today-pill:hover { background: var(--accent-soft-line); }
+
+  /* Week strip + month popover */
+  .weekbar {
+    padding: 14px 34px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .weekbar-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { border-color: var(--accent-soft-line); color: var(--accent); }
+
+  .week-range {
+    flex: 1;
+    text-align: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  .week-strip {
+    display: flex;
+    gap: 6px;
+  }
+  .week-day {
+    flex: 1;
+    text-align: center;
+    padding: 7px 2px 9px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+  }
+  .week-day:hover { background: var(--bg); }
+  .week-day .dow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+  .week-day .num {
+    font-size: 16px;
+    margin-top: 2px;
+    font-family: "Fraunces", Georgia, serif;
+    color: var(--ink);
+  }
+  .week-day .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--accent);
+    margin: 4px auto 0;
+    opacity: 0;
+  }
+  .week-day.has-tasks .dot { opacity: 1; }
+  .week-day.today { border-color: var(--accent-soft-line); }
+  .week-day.selected { background: var(--accent); }
+  .week-day.selected:hover { background: var(--accent); }
+  .week-day.selected .dow, .week-day.selected .num { color: var(--accent-contrast); }
+  .week-day.selected .dot { background: var(--accent-contrast); }
+
+  .month-popover {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .month-popover[hidden] { display: none; }
+  .month-popover-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    text-align: center;
+  }
+  .month-grid .dow {
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-family: "IBM Plex Mono", monospace;
+    padding-bottom: 4px;
+  }
+  .month-grid .day {
+    position: relative;
+    padding: 6px 0;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .month-grid .day:hover { background: var(--bg); }
+  .month-grid .day.muted { color: var(--ink-faint); opacity: 0.5; }
+  .month-grid .day.today { border-color: var(--accent-soft-line); }
+  .month-grid .day.selected { background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+  .month-grid .day .dot {
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+  }
+  .month-grid .day.selected .dot { background: var(--accent-contrast); }
+
   input, select {
     font: inherit;
     color: var(--ink);
@@ -648,6 +786,9 @@
 
     header { flex-direction: column; align-items: flex-start; }
     .progress-wrap { text-align: left; }
+    .weekbar { padding-left: 20px; padding-right: 20px; }
+    .icon-btn { width: 26px; height: 26px; font-size: 12px; }
+    .week-day .num { font-size: 14px; }
     form#add-form { grid-template-columns: 1fr 1fr; }
     #category-input, #priority-input, #time-input { width: 100%; }
     .task-row { grid-template-columns: 44px 18px 1fr auto; }
@@ -661,12 +802,31 @@
       <div>
         <p class="greeting" id="greeting">Доброе утро</p>
         <h1 class="date" id="date-heading">—</h1>
+        <button type="button" id="today-btn" class="today-pill" hidden>Сегодня</button>
       </div>
       <div class="progress-wrap">
         <div class="progress-count" id="progress-count">0<span>/0</span></div>
         <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
       </div>
     </header>
+
+    <div class="weekbar">
+      <div class="weekbar-head">
+        <button type="button" id="week-prev" class="icon-btn" aria-label="Предыдущая неделя">‹</button>
+        <span class="week-range" id="week-range">—</span>
+        <button type="button" id="week-cal-toggle" class="icon-btn" aria-label="Открыть календарь">🗓</button>
+        <button type="button" id="week-next" class="icon-btn" aria-label="Следующая неделя">›</button>
+      </div>
+      <div class="week-strip" id="week-strip"></div>
+      <div class="month-popover" id="month-popover" hidden>
+        <div class="month-popover-head">
+          <button type="button" id="month-prev" class="icon-btn" aria-label="Предыдущий месяц">‹</button>
+          <span id="month-label">—</span>
+          <button type="button" id="month-next" class="icon-btn" aria-label="Следующий месяц">›</button>
+        </div>
+        <div class="month-grid" id="month-grid"></div>
+      </div>
+    </div>
 
     <div class="syncbar">
       <button type="button" id="sync-toggle" class="sync-chip">
@@ -771,6 +931,52 @@
   var RANGE_END_HOUR = 23;
   var TIMELINE_HEIGHT = 460;
   var ROW_MIN_GAP = 56;
+  var DOW_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function strFromDate(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function dateFromStr(s) {
+    var p = s.split("-");
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  }
+  function todayStr() { return strFromDate(new Date()); }
+  function addDays(dateStr, n) {
+    var d = dateFromStr(dateStr);
+    d.setDate(d.getDate() + n);
+    return strFromDate(d);
+  }
+  function mondayOf(dateStr) {
+    var d = dateFromStr(dateStr);
+    var day = d.getDay();
+    var offset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + offset);
+    return strFromDate(d);
+  }
+  function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+  function pluralDays(n) {
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return "день";
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "дня";
+    return "дней";
+  }
+  function relativeDayLabel(diff) {
+    if (diff === 1) return "Завтра";
+    if (diff === -1) return "Вчера";
+    if (diff > 1) return "Через " + diff + " " + pluralDays(diff);
+    return Math.abs(diff) + " " + pluralDays(Math.abs(diff)) + " назад";
+  }
+  function formatRangeLabel(startStr, endStr) {
+    var s = dateFromStr(startStr), e = dateFromStr(endStr);
+    var monthLongE = e.toLocaleDateString("ru-RU", { month: "long" });
+    if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
+      return s.getDate() + "–" + e.getDate() + " " + monthLongE;
+    }
+    var monthShortS = s.toLocaleDateString("ru-RU", { month: "short" }).replace(".", "");
+    return s.getDate() + " " + monthShortS + " – " + e.getDate() + " " + monthLongE;
+  }
+
+  var selectedDate = todayStr();
+  var popoverMonth = null;
 
   var sb = null;
   var syncCode = null;
@@ -814,6 +1020,13 @@
     if (el) el.textContent = syncCode;
   }
 
+  function normalizeTasks(list) {
+    var todayS = todayStr();
+    return (list || []).map(function (t) {
+      return t.date ? t : Object.assign({}, t, { date: todayS });
+    });
+  }
+
   function pushRemoteTasks(code, list) {
     if (!sb) return Promise.resolve();
     var stamp = new Date().toISOString();
@@ -832,7 +1045,7 @@
         if (res.error || !res.data) return;
         if (res.data.updated_at && res.data.updated_at !== lastSyncedAt) {
           lastSyncedAt = res.data.updated_at;
-          tasks = res.data.tasks || [];
+          tasks = normalizeTasks(res.data.tasks);
           saveTasks();
           render();
           setSyncStatus("ok", "Обновлено с другого устройства");
@@ -862,7 +1075,7 @@
       }, function (payload) {
         if (payload.new && payload.new.tasks) {
           lastSyncedAt = payload.new.updated_at;
-          tasks = payload.new.tasks;
+          tasks = normalizeTasks(payload.new.tasks);
           saveTasks();
           render();
           setSyncStatus("ok", "Обновлено с другого устройства");
@@ -887,7 +1100,7 @@
         if (res.error) throw res.error;
         if (res.data) {
           lastSyncedAt = res.data.updated_at;
-          tasks = res.data.tasks || [];
+          tasks = normalizeTasks(res.data.tasks);
           saveTasks();
           render();
           return null;
@@ -938,12 +1151,13 @@
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw === null) {
-        tasks = seedTasks.map(function (t) { return Object.assign({}, t, { createdAt: Date.now() }); });
+        var todayS = todayStr();
+        tasks = seedTasks.map(function (t) { return Object.assign({}, t, { date: todayS, createdAt: Date.now() }); });
         saveTasks();
         return;
       }
       var parsed = JSON.parse(raw);
-      tasks = Array.isArray(parsed) ? parsed : [];
+      tasks = normalizeTasks(Array.isArray(parsed) ? parsed : []);
     } catch (e) {
       tasks = [];
     }
@@ -962,16 +1176,107 @@
   }
 
   function renderDate() {
-    var now = new Date();
-    var weekday = now.toLocaleDateString("ru-RU", { weekday: "long" });
-    var rest = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    var selected = dateFromStr(selectedDate);
+    var weekday = selected.toLocaleDateString("ru-RU", { weekday: "long" });
+    var rest = selected.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
     weekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
     document.getElementById("date-heading").innerHTML =
       '<span class="weekday">' + weekday + '</span>, ' + rest;
 
-    var hour = now.getHours();
-    var greeting = hour < 6 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
-    document.getElementById("greeting").textContent = greeting;
+    var todayS = todayStr();
+    var todayBtn = document.getElementById("today-btn");
+    if (selectedDate === todayS) {
+      var hour = new Date().getHours();
+      var greeting = hour < 6 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
+      document.getElementById("greeting").textContent = greeting;
+      todayBtn.hidden = true;
+    } else {
+      var diffDays = Math.round((dateFromStr(selectedDate) - dateFromStr(todayS)) / 86400000);
+      document.getElementById("greeting").textContent = relativeDayLabel(diffDays);
+      todayBtn.hidden = false;
+    }
+  }
+
+  function hasTasksOn(dateStr) {
+    return tasks.some(function (t) { return t.date === dateStr; });
+  }
+
+  function selectDate(dateStr) {
+    selectedDate = dateStr;
+    closeMonthPopover();
+    render();
+  }
+
+  function renderWeekStrip() {
+    var monday = mondayOf(selectedDate);
+    var todayS = todayStr();
+    document.getElementById("week-range").textContent = formatRangeLabel(monday, addDays(monday, 6));
+
+    var strip = document.getElementById("week-strip");
+    strip.innerHTML = "";
+    DOW_SHORT.forEach(function (label, i) {
+      var ds = addDays(monday, i);
+      var d = dateFromStr(ds);
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "week-day"
+        + (ds === todayS ? " today" : "")
+        + (ds === selectedDate ? " selected" : "")
+        + (hasTasksOn(ds) ? " has-tasks" : "");
+      cell.innerHTML = '<div class="dow">' + label + '</div><div class="num">' + d.getDate() + '</div><div class="dot"></div>';
+      cell.addEventListener("click", function () { selectDate(ds); });
+      strip.appendChild(cell);
+    });
+  }
+
+  function openMonthPopover() {
+    var d = dateFromStr(selectedDate);
+    popoverMonth = { year: d.getFullYear(), month: d.getMonth() };
+    document.getElementById("month-popover").hidden = false;
+    renderMonthPopover();
+  }
+
+  function closeMonthPopover() {
+    document.getElementById("month-popover").hidden = true;
+  }
+
+  function renderMonthPopover() {
+    if (!popoverMonth) return;
+    var year = popoverMonth.year, month = popoverMonth.month;
+    var label = new Date(year, month, 1).toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+    document.getElementById("month-label").textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    var gridStart = mondayOf(strFromDate(new Date(year, month, 1)));
+    var gridEnd = addDays(mondayOf(strFromDate(new Date(year, month, daysInMonth(year, month)))), 6);
+
+    var grid = document.getElementById("month-grid");
+    grid.innerHTML = "";
+    DOW_SHORT.forEach(function (l) {
+      var el = document.createElement("div");
+      el.className = "dow";
+      el.textContent = l;
+      grid.appendChild(el);
+    });
+
+    var todayS = todayStr();
+    var cursor = gridStart;
+    while (true) {
+      (function (ds) {
+        var d = dateFromStr(ds);
+        var inMonth = d.getMonth() === month;
+        var cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "day"
+          + (inMonth ? "" : " muted")
+          + (ds === todayS ? " today" : "")
+          + (ds === selectedDate ? " selected" : "");
+        cell.innerHTML = d.getDate() + (hasTasksOn(ds) ? '<span class="dot"></span>' : "");
+        cell.addEventListener("click", function () { selectDate(ds); });
+        grid.appendChild(cell);
+      })(cursor);
+      if (cursor === gridEnd) break;
+      cursor = addDays(cursor, 1);
+    }
   }
 
   function getCategories() {
@@ -1198,20 +1503,23 @@
 
   function render() {
     renderDate();
+    renderWeekStrip();
+    if (!document.getElementById("month-popover").hidden) renderMonthPopover();
     renderDatalist();
     renderFilters();
 
-    var visible = tasks.filter(matchesFilter);
+    var dayTasks = tasks.filter(function (t) { return t.date === selectedDate; });
+    var visible = dayTasks.filter(matchesFilter);
     var total = visible.length;
     var doneCount = visible.filter(function (t) { return t.done; }).length;
 
     document.getElementById("progress-count").innerHTML = doneCount + "<span>/" + total + "</span>";
     document.getElementById("progress-fill").style.width = (total ? (doneCount / total * 100) : 0) + "%";
 
-    document.getElementById("empty-state").hidden = tasks.length !== 0;
-    document.getElementById("layout").hidden = tasks.length === 0;
+    document.getElementById("empty-state").hidden = dayTasks.length !== 0;
+    document.getElementById("layout").hidden = dayTasks.length === 0;
 
-    if (tasks.length === 0) return;
+    if (dayTasks.length === 0) return;
 
     document.getElementById("filtered-empty").hidden = visible.length !== 0;
 
@@ -1239,6 +1547,7 @@
       category: categoryInput.value.trim(),
       priority: priorityInput.value,
       time: timeInput.value || null,
+      date: selectedDate,
       done: false,
       createdAt: Date.now()
     });
@@ -1287,6 +1596,32 @@
     if (code.length < 4) return;
     connectSync(code);
     input.value = "";
+  });
+
+  document.getElementById("today-btn").addEventListener("click", function () { selectDate(todayStr()); });
+  document.getElementById("week-prev").addEventListener("click", function () { selectDate(addDays(selectedDate, -7)); });
+  document.getElementById("week-next").addEventListener("click", function () { selectDate(addDays(selectedDate, 7)); });
+
+  document.getElementById("week-cal-toggle").addEventListener("click", function () {
+    var pop = document.getElementById("month-popover");
+    if (pop.hidden) { openMonthPopover(); } else { closeMonthPopover(); }
+  });
+  document.getElementById("month-prev").addEventListener("click", function () {
+    popoverMonth.month -= 1;
+    if (popoverMonth.month < 0) { popoverMonth.month = 11; popoverMonth.year -= 1; }
+    renderMonthPopover();
+  });
+  document.getElementById("month-next").addEventListener("click", function () {
+    popoverMonth.month += 1;
+    if (popoverMonth.month > 11) { popoverMonth.month = 0; popoverMonth.year += 1; }
+    renderMonthPopover();
+  });
+  document.addEventListener("click", function (e) {
+    var pop = document.getElementById("month-popover");
+    if (pop.hidden) return;
+    if (pop.contains(e.target)) return;
+    if (e.target.closest && e.target.closest("#week-cal-toggle")) return;
+    closeMonthPopover();
   });
 
   initSupabase();
