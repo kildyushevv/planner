@@ -852,11 +852,6 @@
       </div>
     </div>
 
-    <div id="empty-state" class="empty-state" hidden>
-      <div class="glyph">🗒️</div>
-      <p>Задач нет — добавьте первую кнопкой ниже.</p>
-    </div>
-
     <div class="layout" id="layout">
       <div class="timeline-page">
         <p class="page-title">Расписание дня</p>
@@ -894,6 +889,11 @@
         </div>
 
         <div class="filters" id="filters"></div>
+
+        <div id="empty-state" class="empty-state" hidden>
+          <div class="glyph">🗒️</div>
+          <p>На этот день ничего не запланировано — добавьте первую задачу выше.</p>
+        </div>
 
         <div id="filtered-empty" class="filtered-empty" hidden>
           <p>🔍 Под текущий фильтр ничего не подходит.</p>
@@ -965,9 +965,13 @@
     if (diff > 1) return "Через " + diff + " " + pluralDays(diff);
     return Math.abs(diff) + " " + pluralDays(Math.abs(diff)) + " назад";
   }
+  function genitiveMonth(d) {
+    var withDay = d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    return withDay.replace(/^\d+\s*/, "");
+  }
   function formatRangeLabel(startStr, endStr) {
     var s = dateFromStr(startStr), e = dateFromStr(endStr);
-    var monthLongE = e.toLocaleDateString("ru-RU", { month: "long" });
+    var monthLongE = genitiveMonth(e);
     if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
       return s.getDate() + "–" + e.getDate() + " " + monthLongE;
     }
@@ -1517,11 +1521,7 @@
     document.getElementById("progress-fill").style.width = (total ? (doneCount / total * 100) : 0) + "%";
 
     document.getElementById("empty-state").hidden = dayTasks.length !== 0;
-    document.getElementById("layout").hidden = dayTasks.length === 0;
-
-    if (dayTasks.length === 0) return;
-
-    document.getElementById("filtered-empty").hidden = visible.length !== 0;
+    document.getElementById("filtered-empty").hidden = dayTasks.length === 0 || visible.length !== 0;
 
     var timed = sortByTime(visible.filter(function (t) { return !!t.time; }));
     var untimed = sortTasks(visible.filter(function (t) { return !t.time; }));
