@@ -85,9 +85,10 @@
   }
 
   .page {
-    max-width: 700px;
+    max-width: 640px;
     margin: 0 auto;
     padding: 40px 20px 80px;
+    transition: max-width 0.2s ease;
   }
 
   .sheet {
@@ -158,7 +159,7 @@
 
   /* Sync */
   .syncbar {
-    padding: 12px 34px;
+    padding: 10px 34px;
     border-bottom: 1px solid var(--line);
     background: var(--accent-soft);
   }
@@ -247,24 +248,6 @@
     line-height: 1.5;
   }
 
-  /* Add form */
-  form#add-form {
-    padding: 22px 34px;
-    border-bottom: 1px solid var(--line);
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: 10px;
-  }
-
-  .field-title { grid-column: 1 / -1; }
-
-  label.sr {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-
   input, select {
     font: inherit;
     color: var(--ink);
@@ -277,6 +260,95 @@
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
+
+  label.sr {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  /* Two-page spread layout */
+  .layout {
+    display: block;
+  }
+
+  .timeline-page {
+    display: none;
+    padding: 26px 30px 30px;
+  }
+
+  .list-page {
+    padding: 22px 34px 30px;
+  }
+
+  .page-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin: 0 0 18px;
+  }
+
+  /* Timeline (left page) */
+  .timeline { position: relative; }
+  .timeline-axis {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .timeline-events {
+    position: relative;
+    min-height: 460px;
+  }
+  .timeline-events::before {
+    content: "";
+    position: absolute;
+    left: 78px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--line);
+  }
+  .axis-label {
+    position: absolute;
+    left: 0;
+    transform: translateY(-50%);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    opacity: 0.75;
+  }
+  .timeline-row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-bottom: none !important;
+    background: var(--paper);
+    padding-top: 0 !important;
+    padding-bottom: 4px !important;
+  }
+  .timeline-empty {
+    color: var(--ink-faint);
+    font-size: 13px;
+    padding: 10px 0 0 0;
+  }
+
+  /* Add task: inline on desktop, bottom sheet on mobile */
+  .add-form-wrap {
+    background: var(--paper);
+  }
+  .sheet-handle { display: none; }
+  .sheet-header-row { display: none; }
+
+  form#add-form {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 10px;
+  }
+
+  .field-title { grid-column: 1 / -1; }
 
   #title-input { width: 100%; font-size: 15px; }
   #time-input { font-family: "IBM Plex Mono", monospace; width: 108px; }
@@ -298,10 +370,11 @@
   }
   button.add-btn:hover { opacity: 0.88; }
 
+  .fab, .add-form-backdrop { display: none; }
+
   /* Filters */
   .filters {
-    padding: 16px 34px;
-    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -326,6 +399,7 @@
     padding: 5px 12px;
     cursor: pointer;
     transition: all 0.12s ease;
+    flex-shrink: 0;
   }
   .chip:hover { border-color: var(--accent); color: var(--ink); }
   .chip.active {
@@ -336,7 +410,6 @@
   }
 
   /* Task list */
-  .list-section { padding: 8px 34px 30px; }
   .section-title {
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
@@ -345,7 +418,7 @@
     color: var(--ink-faint);
     margin: 22px 0 10px;
   }
-  .section-title:first-child { margin-top: 18px; }
+  .section-title:first-child { margin-top: 0; }
 
   .task-row {
     display: grid;
@@ -456,13 +529,15 @@
   }
   .del-btn:hover { color: var(--danger); background: var(--high-soft); }
 
-  .empty-state {
+  .empty-state, .filtered-empty {
     text-align: center;
     padding: 46px 20px;
     color: var(--ink-faint);
   }
+  .filtered-empty { padding: 20px; font-size: 13px; }
   .empty-state .glyph { font-size: 26px; margin-bottom: 10px; opacity: 0.7; }
-  .empty-state p { margin: 0; font-size: 14px; }
+  .empty-state p, .filtered-empty p { margin: 0; font-size: 14px; }
+  [hidden] { display: none !important; }
 
   footer.note {
     text-align: center;
@@ -475,7 +550,87 @@
     * { transition: none !important; }
   }
 
-  @media (max-width: 560px) {
+  /* ≥860px: two-page spread */
+  @media (min-width: 860px) {
+    .page { max-width: 1100px; }
+    .layout { display: grid; grid-template-columns: 1.05fr 1fr; }
+    .timeline-page {
+      display: block;
+      border-right: 1px dashed var(--line);
+    }
+    #mobile-timed-section { display: none; }
+    .fab, .add-form-backdrop { display: none !important; }
+    .filters { flex-wrap: wrap; overflow: visible; }
+  }
+
+  /* <860px: single column, floating add button */
+  @media (max-width: 859px) {
+    .filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+
+    .add-form-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -12px 30px var(--shadow);
+      transform: translateY(110%);
+      transition: transform 0.25s ease;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .add-form-wrap.open { transform: translateY(0); }
+
+    .sheet-handle {
+      display: block;
+      width: 36px; height: 4px; border-radius: 4px;
+      background: var(--line); margin: 4px auto 14px;
+    }
+    .sheet-header-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .sheet-title { font-weight: 600; font-size: 15px; }
+    .sheet-close {
+      background: none; border: none; font-size: 20px; color: var(--ink-faint);
+      cursor: pointer; line-height: 1; padding: 4px 8px;
+    }
+
+    .add-form-backdrop {
+      display: block;
+      position: fixed; inset: 0; background: rgba(20, 20, 15, 0.35);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 40;
+    }
+    .add-form-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .fab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      right: 20px;
+      bottom: calc(20px + env(safe-area-inset-bottom));
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border: none;
+      font-size: 26px;
+      line-height: 1;
+      box-shadow: 0 12px 26px var(--shadow);
+      cursor: pointer;
+      z-index: 45;
+    }
+
     header { flex-direction: column; align-items: flex-start; }
     .progress-wrap { text-align: left; }
     form#add-form { grid-template-columns: 1fr 1fr; }
@@ -521,28 +676,67 @@
       </div>
     </div>
 
-    <form id="add-form">
-      <div class="field-title">
-        <label class="sr" for="title-input">Задача</label>
-        <input id="title-input" type="text" placeholder="Что нужно сделать?" autocomplete="off" required />
+    <div id="empty-state" class="empty-state" hidden>
+      <div class="glyph">🗒️</div>
+      <p>Задач нет — добавьте первую кнопкой ниже.</p>
+    </div>
+
+    <div class="layout" id="layout">
+      <div class="timeline-page">
+        <p class="page-title">Расписание дня</p>
+        <div class="timeline">
+          <div class="timeline-axis" id="timeline-axis"></div>
+          <div class="timeline-events" id="timeline-events"></div>
+        </div>
       </div>
-      <label class="sr" for="time-input">Время</label>
-      <input id="time-input" type="time" />
-      <label class="sr" for="category-input">Категория</label>
-      <input id="category-input" type="text" list="category-options" placeholder="Категория" autocomplete="off" />
-      <datalist id="category-options"></datalist>
-      <label class="sr" for="priority-input">Приоритет</label>
-      <select id="priority-input">
-        <option value="medium">Средний</option>
-        <option value="high">Высокий</option>
-        <option value="low">Низкий</option>
-      </select>
-      <button type="submit" class="add-btn">Добавить задачу</button>
-    </form>
 
-    <div class="filters" id="filters"></div>
+      <div class="list-page">
+        <div class="add-form-wrap" id="add-form-wrap">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header-row">
+            <span class="sheet-title">Новая задача</span>
+            <button type="button" id="sheet-close" class="sheet-close" aria-label="Закрыть">×</button>
+          </div>
+          <form id="add-form">
+            <div class="field-title">
+              <label class="sr" for="title-input">Задача</label>
+              <input id="title-input" type="text" placeholder="Что нужно сделать?" autocomplete="off" required />
+            </div>
+            <label class="sr" for="time-input">Время</label>
+            <input id="time-input" type="time" />
+            <label class="sr" for="category-input">Категория</label>
+            <input id="category-input" type="text" list="category-options" placeholder="Категория" autocomplete="off" />
+            <datalist id="category-options"></datalist>
+            <label class="sr" for="priority-input">Приоритет</label>
+            <select id="priority-input">
+              <option value="medium">Средний</option>
+              <option value="high">Высокий</option>
+              <option value="low">Низкий</option>
+            </select>
+            <button type="submit" class="add-btn">Добавить задачу</button>
+          </form>
+        </div>
 
-    <div class="list-section" id="list-section"></div>
+        <div class="filters" id="filters"></div>
+
+        <div id="filtered-empty" class="filtered-empty" hidden>
+          <p>🔍 Под текущий фильтр ничего не подходит.</p>
+        </div>
+
+        <div id="mobile-timed-section">
+          <div class="section-title" id="mobile-timed-title" hidden>По расписанию</div>
+          <div id="mobile-timed-list"></div>
+        </div>
+
+        <div id="untimed-section">
+          <div class="section-title" id="untimed-title" hidden>Без привязки ко времени</div>
+          <div id="untimed-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" id="fab" class="fab" aria-label="Добавить задачу">+</button>
+    <div class="add-form-backdrop" id="add-form-backdrop"></div>
   </div>
   <footer class="note">Задачи хранятся в этом браузере и, если включена синхронизация, у всех устройств с тем же кодом.</footer>
 </div>
@@ -556,6 +750,11 @@
   var PRIORITY_LABEL = { high: "Высокий", medium: "Средний", low: "Низкий" };
   var PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
   var PRIORITY_VAR = { high: "var(--high)", medium: "var(--medium)", low: "var(--low)" };
+
+  var RANGE_START_HOUR = 7;
+  var RANGE_END_HOUR = 23;
+  var TIMELINE_HEIGHT = 460;
+  var ROW_MIN_GAP = 56;
 
   var sb = null;
   var syncCode = null;
@@ -635,19 +834,6 @@
     });
   }
 
-  function scheduleSync() {
-    if (!sb || !syncCode) return;
-    setSyncStatus("pending", "Сохранение…");
-    clearTimeout(pushTimer);
-    pushTimer = setTimeout(function () {
-      pushRemoteTasks(syncCode, tasks).then(function () {
-        setSyncStatus("ok", "Синхронизировано · " + syncCode);
-      }).catch(function () {
-        setSyncStatus("error", "Не удалось синхронизировать");
-      });
-    }, 600);
-  }
-
   function subscribeRealtime(code) {
     if (!sb) return;
     if (syncChannel) { sb.removeChannel(syncChannel); syncChannel = null; }
@@ -705,6 +891,19 @@
   function persist() {
     saveTasks();
     scheduleSync();
+  }
+
+  function scheduleSync() {
+    if (!sb || !syncCode) return;
+    setSyncStatus("pending", "Сохранение…");
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () {
+      pushRemoteTasks(syncCode, tasks).then(function () {
+        setSyncStatus("ok", "Синхронизировано · " + syncCode);
+      }).catch(function () {
+        setSyncStatus("error", "Не удалось синхронизировать");
+      });
+    }, 600);
   }
 
   var seedTasks = [
@@ -914,6 +1113,73 @@
     });
   }
 
+  function sortByTime(list) {
+    return list.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return a.time.localeCompare(b.time);
+    });
+  }
+
+  function renderTaskList(containerId, titleId, list) {
+    var container = document.getElementById(containerId);
+    container.innerHTML = "";
+    list.forEach(function (t) { container.appendChild(buildTaskRow(t)); });
+    var titleEl = titleId ? document.getElementById(titleId) : null;
+    if (titleEl) titleEl.hidden = list.length === 0;
+  }
+
+  function timeToMinutes(t) {
+    var parts = t.split(":");
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  }
+
+  function renderTimeline(timed) {
+    var axis = document.getElementById("timeline-axis");
+    var events = document.getElementById("timeline-events");
+    axis.innerHTML = "";
+    events.innerHTML = "";
+
+    var totalMinutes = (RANGE_END_HOUR - RANGE_START_HOUR) * 60;
+
+    for (var h = RANGE_START_HOUR; h <= RANGE_END_HOUR; h += 3) {
+      var pct = ((h - RANGE_START_HOUR) * 60 / totalMinutes) * 100;
+      var label = document.createElement("div");
+      label.className = "axis-label";
+      label.style.top = pct + "%";
+      label.textContent = (h < 10 ? "0" + h : h) + ":00";
+      axis.appendChild(label);
+    }
+
+    if (timed.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "timeline-empty";
+      empty.textContent = "Пока ничего не запланировано по времени.";
+      events.appendChild(empty);
+      events.style.height = TIMELINE_HEIGHT + "px";
+      return;
+    }
+
+    var lastTop = -Infinity;
+    var tops = timed.map(function (t) {
+      var rel = timeToMinutes(t.time) - RANGE_START_HOUR * 60;
+      var pct = Math.max(0, Math.min(1, rel / totalMinutes));
+      var top = pct * TIMELINE_HEIGHT;
+      if (top < lastTop + ROW_MIN_GAP) top = lastTop + ROW_MIN_GAP;
+      lastTop = top;
+      return top;
+    });
+
+    var finalHeight = Math.max(TIMELINE_HEIGHT, lastTop + ROW_MIN_GAP + 20);
+    events.style.height = finalHeight + "px";
+
+    timed.forEach(function (t, i) {
+      var row = buildTaskRow(t);
+      row.classList.add("timeline-row");
+      row.style.top = tops[i] + "px";
+      events.appendChild(row);
+    });
+  }
+
   function render() {
     renderDate();
     renderDatalist();
@@ -926,47 +1192,19 @@
     document.getElementById("progress-count").innerHTML = doneCount + "<span>/" + total + "</span>";
     document.getElementById("progress-fill").style.width = (total ? (doneCount / total * 100) : 0) + "%";
 
-    var section = document.getElementById("list-section");
-    section.innerHTML = "";
+    document.getElementById("empty-state").hidden = tasks.length !== 0;
+    document.getElementById("layout").hidden = tasks.length === 0;
 
-    if (tasks.length === 0) {
-      var empty = document.createElement("div");
-      empty.className = "empty-state";
-      empty.innerHTML = '<div class="glyph">🗒️</div><p>Задач нет — добавьте первую наверху.</p>';
-      section.appendChild(empty);
-      return;
-    }
+    if (tasks.length === 0) return;
 
-    if (visible.length === 0) {
-      var emptyFiltered = document.createElement("div");
-      emptyFiltered.className = "empty-state";
-      emptyFiltered.innerHTML = '<div class="glyph">🔍</div><p>Под текущий фильтр ничего не подходит.</p>';
-      section.appendChild(emptyFiltered);
-      return;
-    }
+    document.getElementById("filtered-empty").hidden = visible.length !== 0;
 
-    var timed = sortTasks(visible.filter(function (t) { return !!t.time; }))
-      .sort(function (a, b) {
-        if (a.done !== b.done) return a.done ? 1 : -1;
-        return a.time.localeCompare(b.time);
-      });
+    var timed = sortByTime(visible.filter(function (t) { return !!t.time; }));
     var untimed = sortTasks(visible.filter(function (t) { return !t.time; }));
 
-    if (timed.length) {
-      var h1 = document.createElement("div");
-      h1.className = "section-title";
-      h1.textContent = "По расписанию";
-      section.appendChild(h1);
-      timed.forEach(function (t) { section.appendChild(buildTaskRow(t)); });
-    }
-
-    if (untimed.length) {
-      var h2 = document.createElement("div");
-      h2.className = "section-title";
-      h2.textContent = "Без привязки ко времени";
-      section.appendChild(h2);
-      untimed.forEach(function (t) { section.appendChild(buildTaskRow(t)); });
-    }
+    renderTimeline(timed);
+    renderTaskList("mobile-timed-list", "mobile-timed-title", timed);
+    renderTaskList("untimed-list", "untimed-title", untimed);
   }
 
   document.getElementById("add-form").addEventListener("submit", function (e) {
@@ -994,9 +1232,23 @@
     timeInput.value = "";
     categoryInput.value = "";
     priorityInput.value = "medium";
-    titleInput.focus();
     render();
+    closeSheet();
+    titleInput.focus();
   });
+
+  function openSheet() {
+    document.getElementById("add-form-wrap").classList.add("open");
+    document.getElementById("add-form-backdrop").classList.add("open");
+  }
+  function closeSheet() {
+    document.getElementById("add-form-wrap").classList.remove("open");
+    document.getElementById("add-form-backdrop").classList.remove("open");
+  }
+
+  document.getElementById("fab").addEventListener("click", openSheet);
+  document.getElementById("add-form-backdrop").addEventListener("click", closeSheet);
+  document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
   document.getElementById("sync-toggle").addEventListener("click", function () {
     var panel = document.getElementById("sync-panel");
