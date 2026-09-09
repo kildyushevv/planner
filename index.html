@@ -1,5 +1,6 @@
 <title>Ежедневник</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #EDEFEA;
@@ -153,6 +154,97 @@
     background: var(--accent);
     border-radius: 4px;
     transition: width 0.3s ease;
+  }
+
+  /* Sync */
+  .syncbar {
+    padding: 12px 34px;
+    border-bottom: 1px solid var(--line);
+    background: var(--accent-soft);
+  }
+
+  .sync-chip {
+    font: inherit;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 2px 0;
+  }
+  .sync-chip:hover { color: var(--ink); }
+
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    flex-shrink: 0;
+  }
+  .sync-dot.ok { background: var(--low); }
+  .sync-dot.pending { background: var(--medium); }
+  .sync-dot.error { background: var(--high); }
+
+  .sync-panel {
+    margin-top: 12px;
+    display: grid;
+    gap: 14px;
+  }
+  .sync-panel[hidden] { display: none; }
+
+  .sync-caption {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+
+  .sync-code-row, .sync-join-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #sync-code-display {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    background: var(--paper);
+    border: 1px solid var(--accent-soft-line);
+    border-radius: 8px;
+    padding: 8px 14px;
+  }
+
+  #sync-join-input {
+    font-family: "IBM Plex Mono", monospace;
+    text-transform: uppercase;
+    width: 110px;
+    letter-spacing: 0.1em;
+  }
+
+  .mini-btn {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--paper);
+    color: var(--accent);
+    border: 1px solid var(--accent-soft-line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .mini-btn:hover { background: var(--accent-soft-line); }
+
+  .sync-hint {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 0;
+    line-height: 1.5;
   }
 
   /* Add form */
@@ -405,6 +497,30 @@
       </div>
     </header>
 
+    <div class="syncbar">
+      <button type="button" id="sync-toggle" class="sync-chip">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-label">Синхронизация…</span>
+      </button>
+      <div class="sync-panel" id="sync-panel" hidden>
+        <div>
+          <div class="sync-caption">Код этого устройства</div>
+          <div class="sync-code-row">
+            <code id="sync-code-display">------</code>
+            <button type="button" id="sync-copy" class="mini-btn">Скопировать</button>
+          </div>
+        </div>
+        <div>
+          <div class="sync-caption">Подключить к другому устройству</div>
+          <div class="sync-join-row">
+            <input id="sync-join-input" type="text" maxlength="6" placeholder="код" autocomplete="off" />
+            <button type="button" id="sync-join-btn" class="mini-btn">Подключить</button>
+          </div>
+        </div>
+        <p class="sync-hint">Введите на другом устройстве код этого — и оба будут видеть одни и те же задачи. Код открывает доступ к вашим задачам, не делитесь им с посторонними.</p>
+      </div>
+    </div>
+
     <form id="add-form">
       <div class="field-title">
         <label class="sr" for="title-input">Задача</label>
@@ -428,15 +544,134 @@
 
     <div class="list-section" id="list-section"></div>
   </div>
-  <footer class="note">Задачи хранятся в этом браузере — на этом устройстве они никуда не денутся.</footer>
+  <footer class="note">Задачи хранятся в этом браузере и, если включена синхронизация, у всех устройств с тем же кодом.</footer>
 </div>
 
 <script>
 (function () {
   var STORAGE_KEY = "daily-planner.tasks.v1";
+  var SYNC_CODE_KEY = "daily-planner.sync-code.v1";
+  var SUPABASE_URL = "https://irwczmudxgcqtzmjnwjk.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlyd2N6bXVkeGdjcXR6bWpud2prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5MDk3NTUsImV4cCI6MjEwNDQ4NTc1NX0.CpVukQdPrh1n2ij3Zmjp-PFuDoE1HwTOsvef7TZ--Vs";
   var PRIORITY_LABEL = { high: "Высокий", medium: "Средний", low: "Низкий" };
   var PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
   var PRIORITY_VAR = { high: "var(--high)", medium: "var(--medium)", low: "var(--low)" };
+
+  var sb = null;
+  var syncCode = null;
+  var syncChannel = null;
+  var pushTimer = null;
+
+  function initSupabase() {
+    if (window.supabase && window.supabase.createClient) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  }
+
+  function randomSyncCode() {
+    var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    var out = "";
+    for (var i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+
+  function getStoredSyncCode() {
+    var code = null;
+    try { code = localStorage.getItem(SYNC_CODE_KEY); } catch (e) {}
+    if (!code) {
+      code = randomSyncCode();
+      try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (e) {}
+    }
+    return code;
+  }
+
+  function setSyncStatus(state, text) {
+    var dot = document.getElementById("sync-dot");
+    var label = document.getElementById("sync-label");
+    if (dot) dot.className = "sync-dot" + (state ? " " + state : "");
+    if (label) label.textContent = text;
+  }
+
+  function updateSyncCodeDisplay() {
+    var el = document.getElementById("sync-code-display");
+    if (el) el.textContent = syncCode;
+  }
+
+  function pushRemoteTasks(code, list) {
+    if (!sb) return Promise.resolve();
+    return sb.from("planner_sync")
+      .upsert({ sync_code: code, tasks: list, updated_at: new Date().toISOString() })
+      .then(function (res) { if (res.error) throw res.error; });
+  }
+
+  function scheduleSync() {
+    if (!sb || !syncCode) return;
+    setSyncStatus("pending", "Сохранение…");
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () {
+      pushRemoteTasks(syncCode, tasks).then(function () {
+        setSyncStatus("ok", "Синхронизировано · " + syncCode);
+      }).catch(function () {
+        setSyncStatus("error", "Не удалось синхронизировать");
+      });
+    }, 600);
+  }
+
+  function subscribeRealtime(code) {
+    if (!sb) return;
+    if (syncChannel) { sb.removeChannel(syncChannel); syncChannel = null; }
+    syncChannel = sb.channel("planner-" + code)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "planner_sync",
+        filter: "sync_code=eq." + code
+      }, function (payload) {
+        if (payload.new && payload.new.tasks) {
+          tasks = payload.new.tasks;
+          saveTasks();
+          render();
+          setSyncStatus("ok", "Обновлено с другого устройства");
+        }
+      })
+      .subscribe();
+  }
+
+  function connectSync(code) {
+    syncCode = code;
+    try { localStorage.setItem(SYNC_CODE_KEY, code); } catch (e) {}
+    updateSyncCodeDisplay();
+
+    if (!sb) {
+      setSyncStatus(null, "Синхронизация недоступна офлайн");
+      return;
+    }
+
+    setSyncStatus("pending", "Подключение…");
+    sb.from("planner_sync").select("tasks,updated_at").eq("sync_code", code).maybeSingle()
+      .then(function (res) {
+        if (res.error) throw res.error;
+        if (res.data) {
+          tasks = res.data.tasks || [];
+          saveTasks();
+          render();
+          return null;
+        }
+        return pushRemoteTasks(code, tasks);
+      })
+      .then(function () {
+        subscribeRealtime(code);
+        setSyncStatus("ok", "Синхронизировано · " + code);
+      })
+      .catch(function () {
+        setSyncStatus("error", "Офлайн — работает локально");
+      });
+  }
+
+  function persist() {
+    saveTasks();
+    scheduleSync();
+  }
 
   var seedTasks = [
     { id: "s1", title: "Планёрка с командой", category: "Работа", priority: "high", time: "09:30", done: false },
@@ -582,7 +817,7 @@
     checkbox.style.setProperty("--prio-color", PRIORITY_VAR[t.priority] || "var(--ink-faint)");
     checkbox.addEventListener("change", function () {
       t.done = checkbox.checked;
-      saveTasks();
+      persist();
       render();
     });
 
@@ -592,7 +827,7 @@
     titleInput.value = t.title;
     titleInput.addEventListener("change", function () {
       var v = titleInput.value.trim();
-      if (v) { t.title = v; saveTasks(); } else { titleInput.value = t.title; }
+      if (v) { t.title = v; persist(); } else { titleInput.value = t.title; }
     });
     titleInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") titleInput.blur();
@@ -627,7 +862,7 @@
     del.textContent = "✕";
     del.addEventListener("click", function () {
       tasks = tasks.filter(function (x) { return x.id !== t.id; });
-      saveTasks();
+      persist();
       render();
     });
     actions.appendChild(del);
@@ -720,7 +955,7 @@
       createdAt: Date.now()
     });
 
-    saveTasks();
+    persist();
     titleInput.value = "";
     timeInput.value = "";
     categoryInput.value = "";
@@ -729,7 +964,34 @@
     render();
   });
 
+  document.getElementById("sync-toggle").addEventListener("click", function () {
+    var panel = document.getElementById("sync-panel");
+    panel.hidden = !panel.hidden;
+  });
+
+  document.getElementById("sync-copy").addEventListener("click", function () {
+    var btn = document.getElementById("sync-copy");
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(syncCode).catch(function () {});
+    }
+    var old = btn.textContent;
+    btn.textContent = "Скопировано";
+    setTimeout(function () { btn.textContent = old; }, 1500);
+  });
+
+  document.getElementById("sync-join-btn").addEventListener("click", function () {
+    var input = document.getElementById("sync-join-input");
+    var code = input.value.trim().toUpperCase();
+    if (code.length < 4) return;
+    connectSync(code);
+    input.value = "";
+  });
+
+  initSupabase();
+  syncCode = getStoredSyncCode();
   loadTasks();
   render();
+  updateSyncCodeDisplay();
+  connectSync(syncCode);
 })();
 </script>
